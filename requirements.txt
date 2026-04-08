@@ -1,0 +1,16 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+paddleocr>=2.8.0
+pydantic>=2.0
+python-multipart>=0.0.9
+PyMuPDF>=1.24.0
+pydantic-settings>=2.0
+
+# PaddlePaddle depends on platform:
+# Linux (CPU):          paddlepaddle==2.6.1
+# Linux (GPU/ CUDA):    paddlepaddle-gpu==2.6.1
+# macOS (Apple Silicon): No official build — use Docker or paddleocr with onnxruntime
+#
+# Uncomment ONE of below based on your environment:
+# paddlepaddle==2.6.1
+# paddleocr>=2.8.0  # pulls in paddlepaddle automatically on supported platforms
