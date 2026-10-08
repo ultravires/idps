@@ -1,6 +1,7 @@
 import os
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi.concurrency import run_in_threadpool
 
 from app.models.schemas import OCRResponse, PageResult
 from app.services.ocr_service import get_ocr_service
@@ -42,19 +43,16 @@ async def ocr_single(file: UploadFile = File(...)):
 
     content = await file.read()
 
-    ocr = get_ocr_service()
-
     if ext == PDF_EXTENSION:
-        return _ocr_pdf_bytes(ocr, content)
+        return await run_in_threadpool(_ocr_pdf_bytes, content)
 
-    page = ocr.recognize_bytes(content)
+    page = await run_in_threadpool(_ocr_image_bytes, content)
     return _build_response([page])
 
 
 @router.post("/batch", response_model=OCRResponse)
 async def ocr_batch(files: list[UploadFile] = File(...)):
     """Upload multiple images/PDFs for batch OCR."""
-    ocr = get_ocr_service()
     all_pages: list[PageResult] = []
 
     for idx, file in enumerate(files):
@@ -64,20 +62,25 @@ async def ocr_batch(files: list[UploadFile] = File(...)):
         ext = os.path.splitext(file.filename)[1].lower()
 
         if ext == PDF_EXTENSION:
-            pdf_response = _ocr_pdf_bytes(ocr, content)
+            pdf_response = await run_in_threadpool(_ocr_pdf_bytes, content)
             all_pages.extend(pdf_response.pages)
         else:
-            page = ocr.recognize_bytes(content)
+            page = await run_in_threadpool(_ocr_image_bytes, content)
             page.page_index = idx  # re-index for batch
             all_pages.append(page)
 
     return _build_response(all_pages)
 
 
-def _ocr_pdf_bytes(ocr, data: bytes) -> OCRResponse:
+def _ocr_image_bytes(data: bytes) -> PageResult:
+    return get_ocr_service().recognize_bytes(data)
+
+
+def _ocr_pdf_bytes(data: bytes) -> OCRResponse:
     """Process a PDF through page extraction → OCR → response."""
     from app.services.pdf_service import pdf_to_images
 
+    ocr = get_ocr_service()
     image_bytes_list = pdf_to_images(data)
     pages: list[PageResult] = []
     for idx, img_bytes in enumerate(image_bytes_list):
