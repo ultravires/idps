@@ -44,13 +44,20 @@ source .venv/bin/activate
 ### 2. 安装依赖
 
 ```bash
-pip install paddleocr paddlepaddle fastapi uvicorn pydantic python-multipart PyMuPDF pydantic-settings
+pip install -r requirements.txt
 ```
 
-> **平台说明：**
-> - Linux (CPU): `pip install paddlepaddle`
-> - Linux (GPU/CUDA): `pip install paddlepaddle-gpu`
-> - macOS Apple Silicon: paddlepaddle 已提供 wheel 支持，可直接安装
+PaddlePaddle 因平台差异未写入 `requirements.txt`（文件中有对应注释），请按环境单独安装：
+
+```bash
+# Linux (CPU) / macOS Apple Silicon
+pip install paddlepaddle
+
+# Linux (GPU/CUDA)
+pip install paddlepaddle-gpu
+```
+
+也可以直接在 `requirements.txt` 中取消对应一行的注释后统一安装。
 
 首次运行时会自动下载 OCR 模型文件（约 50MB），保存在 `~/.paddlex/official_models/`。
 
