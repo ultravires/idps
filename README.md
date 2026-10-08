@@ -6,7 +6,7 @@
 
 | 层级 | 技术选型 | 说明 |
 |---|---|---|
-| OCR 引擎 | PaddleOCR v3 + PaddlePaddle | PP-OCRv5 模型，支持中英文识别 |
+| OCR 引擎 | PaddleOCR v3.7 + PaddlePaddle | PP-OCRv6 模型，单模型支持中英日韩等 50 种语言 |
 | Web 框架 | FastAPI | 异步 REST API |
 | PDF 处理 | PyMuPDF | PDF 逐页转图片 |
 | 数据校验 | Pydantic v2 | 请求/响应模型 |
@@ -75,6 +75,9 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
 | 变量 | 默认值 | 说明 |
 |---|---|---|
 | `IDPS_OCR_LANG` | `ch` | 识别语言，`ch`=中英文，`en`=仅英文 |
+| `IDPS_OCR_DET_MODEL_NAME` | `PP-OCRv6_small_det` | 检测模型。CPU 部署请保持 small；追求最高准确率可设为 `PP-OCRv6_medium_det`（大图单张耗时可达数分钟） |
+| `IDPS_OCR_REC_MODEL_NAME` | `PP-OCRv6_small_rec` | 识别模型，同上，可设为 `PP-OCRv6_medium_rec` |
+| `IDPS_OCR_DET_LIMIT_SIDE_LEN` | `2000` | 检测模型输入的长边上限（像素）。过大图会先缩放到该尺寸再检测，识别仍基于原图 |
 | `IDPS_MAX_FILE_SIZE_MB` | `50` | 上传文件大小限制（MB） |
 | `IDPS_UPLOAD_DIR` | `./uploads` | 上传目录路径 |
 
@@ -176,6 +179,10 @@ curl -X POST -F "files=@page1.jpg" -F "files=@page2.pdf" http://localhost:8000/a
 ---
 
 ## 常见问题
+
+**Q: 上传大图时卡在 "exceeds max_side_limit of 4000" 不动？**
+
+A: 这不是卡死，而是 PaddleOCR 默认的 medium 模型在 CPU 上对约 4000×3000 的图像做检测推理需要数分钟，期间无任何日志输出。本服务已默认改用 small 模型（`PP-OCRv6_small_det/rec`）并将检测输入长边限制在 2000px，大图单张约几秒即可完成。如需最高准确率可改回 medium 模型（见环境变量表），但请做好耗时预期。
 
 **Q: 首次启动很慢？**
 

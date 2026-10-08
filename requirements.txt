@@ -1,16 +1,15 @@
 fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
-paddleocr>=2.8.0
+paddleocr>=3.7.0
 pydantic>=2.0
 python-multipart>=0.0.9
 PyMuPDF>=1.24.0
 pydantic-settings>=2.0
 
 # PaddlePaddle depends on platform:
-# Linux (CPU):          paddlepaddle==2.6.1
-# Linux (GPU/ CUDA):    paddlepaddle-gpu==2.6.1
-# macOS (Apple Silicon): No official build — use Docker or paddleocr with onnxruntime
+# Linux (CPU):           paddlepaddle>=3.0
+# Linux (GPU/ CUDA):     paddlepaddle-gpu>=3.0
+# macOS (Apple Silicon): paddlepaddle>=3.0 (official wheels available)
 #
 # Uncomment ONE of below based on your environment:
-# paddlepaddle==2.6.1
-# paddleocr>=2.8.0  # pulls in paddlepaddle automatically on supported platforms
+# paddlepaddle>=3.0
