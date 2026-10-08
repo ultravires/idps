@@ -1,9 +1,12 @@
+import logging
 import os
 
 from fastapi import FastAPI
 
 from app.config import settings
 from app.api.ocr_routes import router as ocr_router
+
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title=settings.app_name)
 

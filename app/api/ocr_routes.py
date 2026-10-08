@@ -3,7 +3,7 @@ import os
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.concurrency import run_in_threadpool
 
-from app.models.schemas import OCRResponse, PageResult
+from app.models.schemas import OCRResponse, PageResult, TextBoxResult
 from app.services.ocr_service import get_ocr_service
 from app.config import settings
 
@@ -77,17 +77,49 @@ def _ocr_image_bytes(data: bytes) -> PageResult:
 
 
 def _ocr_pdf_bytes(data: bytes) -> OCRResponse:
-    """Process a PDF through page extraction → OCR → response."""
-    from app.services.pdf_service import pdf_to_images
+    """Process a PDF: use the embedded text layer when present, OCR the rest.
 
-    ocr = get_ocr_service()
-    image_bytes_list = pdf_to_images(data)
+    Digitally-born PDFs (most ebooks, exports) already carry a text layer, so
+    extraction takes under a second; only scanned/image pages go through OCR.
+    The OCR models are loaded lazily — never for a fully text-based PDF.
+    """
+    from app.services.pdf_service import extract_pdf_pages
+
+    ocr = None
     pages: list[PageResult] = []
-    for idx, img_bytes in enumerate(image_bytes_list):
-        page = ocr.recognize_bytes(img_bytes)
-        page.page_index = idx
+    for idx, content in enumerate(extract_pdf_pages(data, dpi=settings.pdf_ocr_dpi)):
+        if content.text_blocks is not None:
+            page = _page_from_text_layer(idx, content.text_blocks)
+        else:
+            if ocr is None:
+                ocr = get_ocr_service()
+            page = ocr.recognize_bytes(content.image)
+            page.page_index = idx
         pages.append(page)
     return _build_response(pages)
+
+
+def _page_from_text_layer(
+    page_index: int, blocks: list[tuple[tuple[float, float, float, float], str]]
+) -> PageResult:
+    text_blocks = [
+        TextBoxResult(
+            text=text,
+            confidence=1.0,
+            bbox=[
+                (int(x0), int(y0)),
+                (int(x1), int(y0)),
+                (int(x1), int(y1)),
+                (int(x0), int(y1)),
+            ],
+        )
+        for (x0, y0, x1, y1), text in blocks
+    ]
+    return PageResult(
+        page_index=page_index,
+        text_blocks=text_blocks,
+        full_text="\n".join(b.text for b in text_blocks),
+    )
 
 
 def _build_response(pages: list[PageResult]) -> OCRResponse:

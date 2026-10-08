@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     # Cap the long side of the text-detection input. The default pipeline
     # allows up to 4000px, which makes CPU detection take minutes.
     ocr_det_limit_side_len: int = 2000
+    # DPI for rendering scanned (text-layer-less) PDF pages before OCR.
+    # Lower values are faster (150 is ~1.8x quicker than 200 on CPU) at some
+    # accuracy cost on small print.
+    pdf_ocr_dpi: int = 200
     max_file_size_mb: int = 50
 
     model_config = {"env_prefix": "IDPS_"}
